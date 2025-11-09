@@ -68,6 +68,7 @@ export default [
       '*.config.ts',
       'packages/frontend/dist/**',
       'packages/backend/dist/**',
+      'packages/backend/src/generated/**',
     ],
   },
 ]

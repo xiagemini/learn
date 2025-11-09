@@ -1,0 +1,182 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                   String    @id @default(cuid())
+  email                String    @unique
+  username             String    @unique
+  passwordHash         String
+  firstName            String?
+  lastName             String?
+  profilePictureUrl    String?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+  
+  userProgress         UserProgress[]
+  pronunciationAttempts PronunciationAttempt[]
+  dailyPlans           DailyPlan[]
+  aggregateScores      AggregateScore[]
+
+  @@map("users")
+}
+
+model Level {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  order     Int      @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  stories   Story[]
+
+  @@map("levels")
+}
+
+model Story {
+  id        String   @id @default(cuid())
+  title     String
+  description String?
+  order     Int
+  levelId   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  level     Level    @relation(fields: [levelId], references: [id], onDelete: Cascade)
+  units     Unit[]
+
+  @@unique([levelId, order])
+  @@map("stories")
+}
+
+model Unit {
+  id        String   @id @default(cuid())
+  title     String
+  description String?
+  order     Int
+  storyId   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  story     Story    @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  assets    UnitAsset[]
+  userProgress UserProgress[]
+  pronunciationAttempts PronunciationAttempt[]
+
+  @@unique([storyId, order])
+  @@map("units")
+}
+
+model UnitAsset {
+  id        String   @id @default(cuid())
+  unitId    String
+  type      AssetType
+  minioKey  String
+  duration  Int?
+  metadata  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  unit      Unit     @relation(fields: [unitId], references: [id], onDelete: Cascade)
+
+  @@map("unit_assets")
+}
+
+enum AssetType {
+  VIDEO
+  AUDIO
+  SUBTITLE
+  SCREENSHOT
+  METADATA
+}
+
+model UserProgress {
+  id        String   @id @default(cuid())
+  userId    String
+  unitId    String
+  completed Boolean  @default(false)
+  score     Int      @default(0)
+  startedAt DateTime?
+  completedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  unit      Unit     @relation(fields: [unitId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, unitId])
+  @@map("user_progress")
+}
+
+model DailyPlan {
+  id        String   @id @default(cuid())
+  userId    String
+  plannedDate DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  planEntries DailyPlanEntry[]
+
+  @@unique([userId, plannedDate])
+  @@map("daily_plans")
+}
+
+model DailyPlanEntry {
+  id        String   @id @default(cuid())
+  dailyPlanId String
+  unitId    String
+  completed Boolean  @default(false)
+  score     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  dailyPlan DailyPlan @relation(fields: [dailyPlanId], references: [id], onDelete: Cascade)
+
+  @@map("daily_plan_entries")
+}
+
+model PronunciationAttempt {
+  id        String   @id @default(cuid())
+  userId    String
+  unitId    String
+  audioKey  String
+  score     Float    @default(0)
+  feedback  String?
+  createdAt DateTime @default(now())
+  
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  unit      Unit     @relation(fields: [unitId], references: [id], onDelete: Cascade)
+
+  @@map("pronunciation_attempts")
+}
+
+model AggregateScore {
+  id        String   @id @default(cuid())
+  userId    String
+  period    ScorePeriod
+  score     Float
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, period])
+  @@map("aggregate_scores")
+}
+
+enum ScorePeriod {
+  DAILY
+  WEEKLY
+  MONTHLY
+  OVERALL
+}
