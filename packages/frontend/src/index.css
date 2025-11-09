@@ -1,0 +1,131 @@
+:root {
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  color-scheme: light dark;
+  color: rgba(255, 255, 255, 0.87);
+  background-color: #242424;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-text-size-adjust: 100%;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  display: flex;
+  place-items: center;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+#root {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+}
+
+.app {
+  width: 100%;
+}
+
+.app-header {
+  margin-bottom: 2rem;
+}
+
+.app-header h1 {
+  font-size: 3.2em;
+  line-height: 1.1;
+  margin: 0 0 0.5rem 0;
+}
+
+.app-header p {
+  color: #888;
+  font-size: 1.2em;
+}
+
+.app-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.backend-info,
+.placeholder {
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 2rem;
+  margin: 1rem 0;
+}
+
+.backend-info h2,
+.placeholder h2 {
+  margin-top: 0;
+  color: #646cff;
+}
+
+.message {
+  font-size: 1.2em;
+  color: #4ade80;
+  margin: 1rem 0;
+}
+
+.health-status {
+  text-align: left;
+  background: #0f0f0f;
+  padding: 1rem;
+  border-radius: 4px;
+  margin-top: 1rem;
+}
+
+.health-status h3 {
+  margin-top: 0;
+  color: #646cff;
+}
+
+.healthy {
+  color: #4ade80;
+}
+
+.unhealthy {
+  color: #f87171;
+}
+
+.placeholder p {
+  color: #ccc;
+  line-height: 1.6;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    color: #213547;
+    background-color: #ffffff;
+  }
+
+  .backend-info,
+  .placeholder {
+    background: #f9f9f9;
+    border-color: #ddd;
+  }
+
+  .health-status {
+    background: #f0f0f0;
+  }
+
+  .app-header p {
+    color: #666;
+  }
+
+  .placeholder p {
+    color: #666;
+  }
+}
