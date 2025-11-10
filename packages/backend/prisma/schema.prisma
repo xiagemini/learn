@@ -12,20 +12,22 @@ datasource db {
 }
 
 model User {
-  id                   String    @id @default(cuid())
-  email                String    @unique
-  username             String    @unique
-  passwordHash         String
-  firstName            String?
-  lastName             String?
-  profilePictureUrl    String?
-  createdAt            DateTime  @default(now())
-  updatedAt            DateTime  @updatedAt
-  
-  userProgress         UserProgress[]
+  id                String   @id @default(cuid())
+  email             String   @unique
+  username          String   @unique
+  passwordHash      String
+  firstName         String?
+  lastName          String?
+  profilePictureUrl String?
+  selectedLevelId   String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  userProgress          UserProgress[]
   pronunciationAttempts PronunciationAttempt[]
-  dailyPlans           DailyPlan[]
-  aggregateScores      AggregateScore[]
+  dailyPlans            DailyPlan[]
+  aggregateScores       AggregateScore[]
+  selectedLevel         Level?                 @relation(fields: [selectedLevelId], references: [id], onDelete: SetNull)
 
   @@map("users")
 }
@@ -36,40 +38,41 @@ model Level {
   order     Int      @unique
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
-  stories   Story[]
+
+  stories Story[]
+  users   User[]
 
   @@map("levels")
 }
 
 model Story {
-  id        String   @id @default(cuid())
-  title     String
+  id          String   @id @default(cuid())
+  title       String
   description String?
-  order     Int
-  levelId   String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
-  level     Level    @relation(fields: [levelId], references: [id], onDelete: Cascade)
-  units     Unit[]
+  order       Int
+  levelId     String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  level Level  @relation(fields: [levelId], references: [id], onDelete: Cascade)
+  units Unit[]
 
   @@unique([levelId, order])
   @@map("stories")
 }
 
 model Unit {
-  id        String   @id @default(cuid())
-  title     String
+  id          String   @id @default(cuid())
+  title       String
   description String?
-  order     Int
-  storyId   String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
-  story     Story    @relation(fields: [storyId], references: [id], onDelete: Cascade)
-  assets    UnitAsset[]
-  userProgress UserProgress[]
+  order       Int
+  storyId     String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  story                 Story                  @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  assets                UnitAsset[]
+  userProgress          UserProgress[]
   pronunciationAttempts PronunciationAttempt[]
 
   @@unique([storyId, order])
@@ -77,16 +80,16 @@ model Unit {
 }
 
 model UnitAsset {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   unitId    String
   type      AssetType
   minioKey  String
   duration  Int?
   metadata  String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
-  unit      Unit     @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  unit Unit @relation(fields: [unitId], references: [id], onDelete: Cascade)
 
   @@map("unit_assets")
 }
@@ -100,31 +103,31 @@ enum AssetType {
 }
 
 model UserProgress {
-  id        String   @id @default(cuid())
-  userId    String
-  unitId    String
-  completed Boolean  @default(false)
-  score     Int      @default(0)
-  startedAt DateTime?
+  id          String    @id @default(cuid())
+  userId      String
+  unitId      String
+  completed   Boolean   @default(false)
+  score       Int       @default(0)
+  startedAt   DateTime?
   completedAt DateTime?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  unit      Unit     @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  unit Unit @relation(fields: [unitId], references: [id], onDelete: Cascade)
 
   @@unique([userId, unitId])
   @@map("user_progress")
 }
 
 model DailyPlan {
-  id        String   @id @default(cuid())
-  userId    String
+  id          String   @id @default(cuid())
+  userId      String
   plannedDate DateTime
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   planEntries DailyPlanEntry[]
 
   @@unique([userId, plannedDate])
@@ -132,14 +135,14 @@ model DailyPlan {
 }
 
 model DailyPlanEntry {
-  id        String   @id @default(cuid())
+  id          String   @id @default(cuid())
   dailyPlanId String
-  unitId    String
-  completed Boolean  @default(false)
-  score     Int      @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
+  unitId      String
+  completed   Boolean  @default(false)
+  score       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
   dailyPlan DailyPlan @relation(fields: [dailyPlanId], references: [id], onDelete: Cascade)
 
   @@map("daily_plan_entries")
@@ -153,22 +156,22 @@ model PronunciationAttempt {
   score     Float    @default(0)
   feedback  String?
   createdAt DateTime @default(now())
-  
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  unit      Unit     @relation(fields: [unitId], references: [id], onDelete: Cascade)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  unit Unit @relation(fields: [unitId], references: [id], onDelete: Cascade)
 
   @@map("pronunciation_attempts")
 }
 
 model AggregateScore {
-  id        String   @id @default(cuid())
+  id        String      @id @default(cuid())
   userId    String
   period    ScorePeriod
   score     Float
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, period])
   @@map("aggregate_scores")
