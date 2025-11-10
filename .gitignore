@@ -94,3 +94,15 @@ jspm_packages/
 # OS
 .DS_Store
 Thumbs.db
+
+# Docker & Local Development
+data/
+.docker/
+
+# Database files
+*.db
+*.db-shm
+*.db-wal
+dev.db
+dev.db-shm
+dev.db-wal
