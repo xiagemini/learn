@@ -145,7 +145,8 @@ make docker-clean
 - **Framework**: Hono
 - **Runtime**: Node.js
 - **Port**: 3001 (configurable via `PORT` env var)
-- **Features**: CORS, logging, health check endpoint
+- **Database**: SQLite with Prisma ORM
+- **Features**: CORS, logging, health check endpoint, type-safe database access
 
 #### Setup
 
@@ -155,10 +156,35 @@ make docker-clean
    cp packages/backend/.env.example packages/backend/.env
    ```
 
-2. Start development server:
+2. Generate Prisma Client:
+   ```bash
+   pnpm --filter backend db:generate
+   ```
+
+3. Initialize and seed the database:
+   ```bash
+   pnpm --filter backend db:migrate
+   pnpm --filter backend db:seed
+   ```
+
+4. Start development server:
    ```bash
    pnpm --filter backend dev
    ```
+
+#### Database Management
+
+The backend includes comprehensive database tools:
+
+- `pnpm --filter backend db:generate` - Generate Prisma Client
+- `pnpm --filter backend db:migrate` - Create and apply migrations
+- `pnpm --filter backend db:reset` - Reset database and re-seed
+- `pnpm --filter backend db:seed` - Populate database with sample data
+- `pnpm --filter backend db:studio` - Open Prisma Studio (database browser)
+
+For detailed database documentation, see:
+- [Database Schema](packages/backend/DATABASE_SCHEMA.md)
+- [Migrations & Seeding](packages/backend/MIGRATION_AND_SEEDING.md)
 
 #### API Endpoints
 
@@ -292,6 +318,19 @@ This monorepo uses:
 - **ESLint + Prettier** for code quality
 - **Environment variables** for configuration
 - **Proxy configuration** for seamless frontend-backend communication
+- **Prisma ORM** for type-safe database access
+- **SQLite** for development and testing databases
+
+### Database
+
+The backend includes a comprehensive SQLite database with Prisma ORM. The schema covers:
+
+- **Users**: User accounts with authentication
+- **Learning Content**: Levels, Stories, Units, and Unit Assets (video, audio, subtitles, screenshots, metadata)
+- **User Tracking**: Progress per unit, daily plans, pronunciation attempts, and aggregate scores
+- **MinIO Integration**: All media assets reference placeholder MinIO keys
+
+See [Database Schema Documentation](packages/backend/DATABASE_SCHEMA.md) for detailed model descriptions.
 - **Docker Compose** for local development services (SQLite + MinIO)
 - **MinIO** for S3-compatible object storage (media assets)
 
