@@ -17,8 +17,7 @@
     "format": "prettier --write .",
     "typecheck": "npm run typecheck:backend && npm run typecheck:frontend",
     "typecheck:backend": "npm --prefix packages/backend run typecheck",
-    "typecheck:frontend": "npm --prefix packages/frontend run typecheck"
-    "typecheck": "pnpm --recursive typecheck",
+    "typecheck:frontend": "npm --prefix packages/frontend run typecheck",
     "docker:up": "docker compose up -d",
     "docker:down": "docker compose down",
     "docker:logs": "docker compose logs -f",
