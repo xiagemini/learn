@@ -4,7 +4,9 @@ import { logger } from 'hono/logger'
 import { serve } from '@hono/node-server'
 import dotenv from 'dotenv'
 import { PrismaClient } from './generated/client.js'
-import { checkDatabaseConnection, getMinIOConfig, getAzureConfig } from './db'
+import { checkDatabaseConnection, getMinIOConfig, getAzureConfig } from './db.js'
+import { checkMinIOHealth, getPresignedUrl, getPresignedPutUrl } from './services/minio.js'
+import { listAssetsForUnit, getAssetWithUrl, syncAssetsFromMinIO } from './services/assets.js'
 
 dotenv.config()
 
@@ -19,10 +21,11 @@ app.get('/', (c) => {
   return c.json({ message: 'Hello from Hono backend!' })
 })
 
-app.get('/health', (c) => {
+app.get('/health', async (c) => {
   const dbStatus = checkDatabaseConnection()
   const minioConfig = getMinIOConfig()
   const azureConfig = getAzureConfig()
+  const minioHealthy = await checkMinIOHealth()
 
   return c.json({
     status: 'ok',
@@ -37,6 +40,7 @@ app.get('/health', (c) => {
       minio: {
         endpoint: minioConfig.endpoint,
         configured: !!minioConfig.rootUser,
+        connected: minioHealthy,
         buckets: minioConfig.buckets,
       },
       azure: {
@@ -67,7 +71,7 @@ app.get('/api/users', async (c) => {
       },
     })
     return c.json({ users })
-  } catch (error) {
+  } catch {
     return c.json({ error: 'Failed to fetch users' }, 500)
   }
 })
@@ -82,7 +86,7 @@ app.get('/api/levels', async (c) => {
       }
     })
     return c.json({ levels })
-  } catch (error) {
+  } catch {
     return c.json({ error: 'Failed to fetch levels' }, 500)
   }
 })
@@ -100,7 +104,7 @@ app.get('/api/stories', async (c) => {
       }
     })
     return c.json({ stories })
-  } catch (error) {
+  } catch {
     return c.json({ error: 'Failed to fetch stories' }, 500)
   }
 })
@@ -118,7 +122,7 @@ app.get('/api/units', async (c) => {
       }
     })
     return c.json({ units })
-  } catch (error) {
+  } catch {
     return c.json({ error: 'Failed to fetch units' }, 500)
   }
 })
@@ -142,10 +146,161 @@ app.get('/api/db/status', async (c) => {
         assets: assetCount,
       }
     })
-  } catch (error) {
+  } catch {
     return c.json({ 
       database: 'error',
       error: 'Failed to connect to database' 
+    }, 500)
+  }
+})
+
+// MinIO health check endpoint
+app.get('/api/minio/health', async (c) => {
+  try {
+    const config = getMinIOConfig()
+    const isHealthy = await checkMinIOHealth()
+    
+    return c.json({
+      status: isHealthy ? 'connected' : 'disconnected',
+      endpoint: config.endpoint,
+      buckets: config.buckets,
+      timestamp: new Date().toISOString(),
+    })
+  } catch (error) {
+    return c.json({
+      status: 'error',
+      error: error instanceof Error ? error.message : 'Unknown error',
+    }, 500)
+  }
+})
+
+// List all assets for a specific unit with presigned URLs
+app.get('/api/units/:unitId/assets', async (c) => {
+  try {
+    const unitId = c.req.param('unitId')
+    
+    // Verify unit exists
+    const unit = await prisma.unit.findUnique({
+      where: { id: unitId }
+    })
+    
+    if (!unit) {
+      return c.json({ error: 'Unit not found' }, 404)
+    }
+    
+    const assets = await listAssetsForUnit(unitId)
+    
+    return c.json({
+      unitId,
+      count: assets.length,
+      assets,
+    })
+  } catch (error) {
+    return c.json({
+      error: error instanceof Error ? error.message : 'Failed to fetch assets',
+    }, 500)
+  }
+})
+
+// Get single asset with presigned URL
+app.get('/api/assets/:assetId', async (c) => {
+  try {
+    const assetId = c.req.param('assetId')
+    const asset = await getAssetWithUrl(assetId)
+    
+    if (!asset) {
+      return c.json({ error: 'Asset not found' }, 404)
+    }
+    
+    return c.json(asset)
+  } catch (error) {
+    return c.json({
+      error: error instanceof Error ? error.message : 'Failed to fetch asset',
+    }, 500)
+  }
+})
+
+// Generate presigned URL for an asset
+app.post('/api/assets/:assetId/presigned-url', async (c) => {
+  try {
+    const assetId = c.req.param('assetId')
+    const body = await c.req.json() as { expirySeconds?: number }
+    
+    const asset = await prisma.unitAsset.findUnique({
+      where: { id: assetId }
+    })
+    
+    if (!asset) {
+      return c.json({ error: 'Asset not found' }, 404)
+    }
+    
+    const config = getMinIOConfig()
+    const presignedUrl = await getPresignedUrl({
+      bucketName: config.buckets.assets,
+      objectName: asset.minioKey,
+      expirySeconds: body.expirySeconds,
+    })
+    
+    return c.json({
+      assetId,
+      presignedUrl,
+      expiresAt: new Date(Date.now() + (body.expirySeconds || 3600) * 1000).toISOString(),
+    })
+  } catch (error) {
+    return c.json({
+      error: error instanceof Error ? error.message : 'Failed to generate presigned URL',
+    }, 500)
+  }
+})
+
+// Generate presigned PUT URL for uploading an asset
+app.post('/api/assets/presigned-upload-url', async (c) => {
+  try {
+    const body = await c.req.json() as { unitId: string; objectKey: string; expirySeconds?: number }
+    
+    // Verify unit exists
+    const unit = await prisma.unit.findUnique({
+      where: { id: body.unitId }
+    })
+    
+    if (!unit) {
+      return c.json({ error: 'Unit not found' }, 404)
+    }
+    
+    const config = getMinIOConfig()
+    const presignedUrl = await getPresignedPutUrl({
+      bucketName: config.buckets.uploads,
+      objectName: body.objectKey,
+      expirySeconds: body.expirySeconds,
+    })
+    
+    return c.json({
+      unitId: body.unitId,
+      objectKey: body.objectKey,
+      presignedUrl,
+      expiresAt: new Date(Date.now() + (body.expirySeconds || 3600) * 1000).toISOString(),
+    })
+  } catch (error) {
+    return c.json({
+      error: error instanceof Error ? error.message : 'Failed to generate presigned upload URL',
+    }, 500)
+  }
+})
+
+// Sync assets from MinIO
+app.post('/api/minio/sync-assets', async (c) => {
+  try {
+    const body = await c.req.json() as { bucketPrefix?: string }
+    const result = await syncAssetsFromMinIO(body.bucketPrefix)
+    
+    return c.json({
+      message: 'Asset sync completed',
+      ...result,
+      timestamp: new Date().toISOString(),
+    })
+  } catch (error) {
+    return c.json({
+      error: error instanceof Error ? error.message : 'Failed to sync assets',
     }, 500)
   }
 })
