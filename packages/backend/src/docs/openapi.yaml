@@ -1,0 +1,469 @@
+openapi: 3.0.3
+info:
+  title: Courses API
+  description: REST endpoints for course management system
+  version: 1.0.0
+  contact:
+    name: API Support
+    email: support@example.com
+
+servers:
+  - url: http://localhost:3001/courses
+    description: Development server
+
+paths:
+  /levels:
+    get:
+      tags:
+        - Levels
+      summary: Get all levels with stories and units
+      description: Retrieve all learning levels with their associated stories and units
+      operationId: getLevels
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  levels:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/LevelWithStories'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /stories:
+    get:
+      tags:
+        - Stories
+      summary: Get all stories grouped by level
+      description: Retrieve all stories organized by their parent levels
+      operationId: getStoriesByLevel
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  levels:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/LevelWithStories'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /levels/{levelId}/stories:
+    get:
+      tags:
+        - Stories
+      summary: Get stories for a specific level
+      description: Retrieve all stories belonging to a specific level
+      operationId: getStoriesByLevelId
+      parameters:
+        - name: levelId
+          in: path
+          required: true
+          description: The ID of the level
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  stories:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/StoryWithUnits'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /stories/{storyId}/units:
+    get:
+      tags:
+        - Units
+      summary: Get units for a specific story
+      description: Retrieve all units belonging to a specific story
+      operationId: getUnitsByStoryId
+      parameters:
+        - name: storyId
+          in: path
+          required: true
+          description: The ID of the story
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  units:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/UnitWithAssets'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /units/{unitId}:
+    get:
+      tags:
+        - Units
+      summary: Get a specific unit with assets
+      description: Retrieve a single unit with all its associated assets
+      operationId: getUnitById
+      parameters:
+        - name: unitId
+          in: path
+          required: true
+          description: The ID of the unit
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  unit:
+                    $ref: '#/components/schemas/UnitWithAssets'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /daily-plans:
+    get:
+      tags:
+        - Daily Plans
+      summary: Get daily plans for authenticated user
+      description: Retrieve daily plans for the currently authenticated user
+      operationId: getDailyPlans
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: startDate
+          in: query
+          required: false
+          description: Start date filter (ISO date string)
+          schema:
+            type: string
+            format: date
+        - name: endDate
+          in: query
+          required: false
+          description: End date filter (ISO date string)
+          schema:
+            type: string
+            format: date
+        - name: overdueOnly
+          in: query
+          required: false
+          description: Filter only overdue plans
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  dailyPlans:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/DailyPlanWithEntries'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /daily-plans/{date}:
+    get:
+      tags:
+        - Daily Plans
+      summary: Get daily plan for specific date
+      description: Retrieve a specific daily plan for the authenticated user
+      operationId: getDailyPlanByDate
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: date
+          in: path
+          required: true
+          description: Date in YYYY-MM-DD format
+          schema:
+            type: string
+            format: date
+            pattern: '^\d{4}-\d{2}-\d{2}$'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  dailyPlan:
+                    $ref: '#/components/schemas/DailyPlanWithEntries'
+        '400':
+          description: Invalid date format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+components:
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error message
+
+    LevelWithStories:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        order:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        _count:
+          type: object
+          properties:
+            stories:
+              type: integer
+        stories:
+          type: array
+          items:
+            $ref: '#/components/schemas/StoryWithUnits'
+
+    StoryWithUnits:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+          nullable: true
+        order:
+          type: integer
+        levelId:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        level:
+          type: object
+          properties:
+            name:
+              type: string
+        _count:
+          type: object
+          properties:
+            units:
+              type: integer
+        units:
+          type: array
+          items:
+            $ref: '#/components/schemas/UnitWithAssets'
+
+    UnitWithAssets:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+          nullable: true
+        order:
+          type: integer
+        storyId:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        story:
+          type: object
+          properties:
+            title:
+              type: string
+        _count:
+          type: object
+          properties:
+            assets:
+              type: integer
+        assets:
+          type: array
+          items:
+            $ref: '#/components/schemas/Asset'
+
+    Asset:
+      type: object
+      properties:
+        id:
+          type: string
+        unitId:
+          type: string
+        type:
+          type: string
+          enum:
+            - VIDEO
+            - AUDIO
+            - SUBTITLE
+            - SCREENSHOT
+            - METADATA
+        minioKey:
+          type: string
+        duration:
+          type: integer
+          nullable: true
+        metadata:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        presignedUrl:
+          type: string
+          description: Temporary URL to access the asset file
+
+    DailyPlanWithEntries:
+      type: object
+      properties:
+        id:
+          type: string
+        userId:
+          type: string
+        plannedDate:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        isOverdue:
+          type: boolean
+          description: Whether the plan is overdue (past date with incomplete entries)
+        entries:
+          type: array
+          items:
+            $ref: '#/components/schemas/DailyPlanEntry'
+
+    DailyPlanEntry:
+      type: object
+      properties:
+        id:
+          type: string
+        dailyPlanId:
+          type: string
+        unitId:
+          type: string
+        completed:
+          type: boolean
+        score:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        unit:
+          type: object
+          properties:
+            id:
+              type: string
+            title:
+              type: string
+            story:
+              type: object
+              properties:
+                title:
+                  type: string
+                level:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+
+  responses:
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    Unauthorized:
+      description: Authentication required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+tags:
+  - name: Levels
+    description: Learning level management
+  - name: Stories
+    description: Learning story management
+  - name: Units
+    description: Learning unit management
+  - name: Daily Plans
+    description: Daily study plan management

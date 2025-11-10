@@ -19,12 +19,14 @@
   },
   "dependencies": {
     "@hono/node-server": "^1.0.0",
+    "@hono/zod-openapi": "^1.1.4",
     "@prisma/client": "^6.19.0",
     "bcryptjs": "^3.0.3",
     "dotenv": "^16.4.0",
     "hono": "^4.0.0",
     "minio": "^8.0.0",
-    "prisma": "^6.19.0"
+    "prisma": "^6.19.0",
+    "zod": "^4.1.12"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
