@@ -9,7 +9,14 @@
     "build": "pnpm --recursive build",
     "lint": "pnpm --recursive lint",
     "format": "prettier --write .",
-    "typecheck": "pnpm --recursive typecheck"
+    "typecheck": "pnpm --recursive typecheck",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f",
+    "docker:status": "docker compose ps",
+    "docker:clean": "docker compose down -v",
+    "init-env": "cp -n packages/backend/.env.example packages/backend/.env; cp -n packages/frontend/.env.example packages/frontend/.env; true",
+    "setup": "pnpm init-env && pnpm docker:up"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^8.0.0",
