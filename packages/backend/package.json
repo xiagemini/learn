@@ -20,12 +20,14 @@
   "dependencies": {
     "@hono/node-server": "^1.0.0",
     "@prisma/client": "^6.19.0",
+    "bcryptjs": "^3.0.3",
     "dotenv": "^16.4.0",
     "hono": "^4.0.0",
     "minio": "^8.0.0",
     "prisma": "^6.19.0"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20.0.0",
     "@vitest/ui": "^1.0.0",
     "tsx": "^4.0.0",

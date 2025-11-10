@@ -7,6 +7,7 @@ import { PrismaClient } from './generated/client.js'
 import { checkDatabaseConnection, getMinIOConfig, getAzureConfig } from './db.js'
 import { checkMinIOHealth, getPresignedUrl, getPresignedPutUrl } from './services/minio.js'
 import { listAssetsForUnit, getAssetWithUrl, syncAssetsFromMinIO } from './services/assets.js'
+import authRouter from './routes/auth.js'
 
 dotenv.config()
 
@@ -58,6 +59,9 @@ app.get('/api/status', (c) => {
     timestamp: new Date().toISOString(),
   })
 })
+
+// Auth routes
+app.route('/auth', authRouter)
 
 // Database endpoints
 app.get('/api/users', async (c) => {
