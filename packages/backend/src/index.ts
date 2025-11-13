@@ -9,6 +9,7 @@ import { checkMinIOHealth, getPresignedUrl, getPresignedPutUrl } from './service
 import { listAssetsForUnit, getAssetWithUrl, syncAssetsFromMinIO } from './services/assets.js'
 import authRouter from './routes/auth.js'
 import coursesRouter from './routes/courses.js'
+import progressRouter from './routes/progress.js'
 
 dotenv.config()
 
@@ -66,6 +67,9 @@ app.route('/auth', authRouter)
 
 // Courses routes
 app.route('/courses', coursesRouter)
+
+// Progress routes
+app.route('/progress', progressRouter)
 
 // Database endpoints
 app.get('/api/users', async (c) => {
