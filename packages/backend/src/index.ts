@@ -8,6 +8,7 @@ import { checkDatabaseConnection, getMinIOConfig, getAzureConfig } from './db.js
 import { checkMinIOHealth, getPresignedUrl, getPresignedPutUrl } from './services/minio.js'
 import { listAssetsForUnit, getAssetWithUrl, syncAssetsFromMinIO } from './services/assets.js'
 import authRouter from './routes/auth.js'
+import coursesRouter from './routes/courses.js'
 
 dotenv.config()
 
@@ -62,6 +63,9 @@ app.get('/api/status', (c) => {
 
 // Auth routes
 app.route('/auth', authRouter)
+
+// Courses routes
+app.route('/courses', coursesRouter)
 
 // Database endpoints
 app.get('/api/users', async (c) => {
