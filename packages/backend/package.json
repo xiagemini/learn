@@ -24,6 +24,7 @@
     "bcryptjs": "^3.0.3",
     "dotenv": "^16.4.0",
     "hono": "^4.0.0",
+    "microsoft-cognitiveservices-speech-sdk": "^1.47.0",
     "minio": "^8.0.0",
     "prisma": "^6.19.0",
     "zod": "^4.1.12"

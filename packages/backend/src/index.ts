@@ -10,6 +10,7 @@ import { listAssetsForUnit, getAssetWithUrl, syncAssetsFromMinIO } from './servi
 import authRouter from './routes/auth.js'
 import coursesRouter from './routes/courses.js'
 import progressRouter from './routes/progress.js'
+import azureSpeechRouter from './routes/azure-speech.js'
 
 dotenv.config()
 
@@ -70,6 +71,9 @@ app.route('/courses', coursesRouter)
 
 // Progress routes
 app.route('/progress', progressRouter)
+
+// Azure Speech routes
+app.route('/azure-speech', azureSpeechRouter)
 
 // Database endpoints
 app.get('/api/users', async (c) => {
