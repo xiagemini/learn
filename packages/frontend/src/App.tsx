@@ -1,63 +1,72 @@
-import { useState, useEffect } from 'react'
+import type { ReactElement } from 'react'
+import { Navigate, Route, Routes } from 'react-router-dom'
+import LoadingScreen from './components/LoadingScreen'
+import { useAuth } from './hooks/useAuth'
+import DashboardPage from './pages/DashboardPage'
+import LevelSelectionPage from './pages/LevelSelectionPage'
+import LoginPage from './pages/LoginPage'
 
-interface HealthStatus {
-  status: string
-  timestamp: string
-  uptime: number
+type ProtectedRouteProps = {
+  children: ReactElement
+}
+
+const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
+  const { status } = useAuth()
+
+  if (status === 'initializing') {
+    return <LoadingScreen message="Preparing your learning experience…" />
+  }
+
+  if (status !== 'authenticated') {
+    return <Navigate to="/login" replace />
+  }
+
+  return children
 }
 
 function App() {
-  const [message, setMessage] = useState<string>('')
-  const [health, setHealth] = useState<HealthStatus | null>(null)
+  const { status, user } = useAuth()
 
-  useEffect(() => {
-    fetch('/api')
-      .then((res) => res.json())
-      .then((data) => setMessage(data.message))
-      .catch((err) => console.error('Error fetching message:', err))
-
-    fetch('/api/health')
-      .then((res) => res.json())
-      .then((data) => setHealth(data))
-      .catch((err) => console.error('Error fetching health:', err))
-  }, [])
+  if (status === 'initializing') {
+    return <LoadingScreen message="Preparing your learning experience…" />
+  }
 
   return (
-    <div className="app">
-      <header className="app-header">
-        <h1>Monorepo Frontend</h1>
-        <p>React + Vite + TypeScript</p>
-      </header>
+    <Routes>
+      <Route
+        path="/login"
+        element={
+          status === 'authenticated' ? (
+            <Navigate to={user?.selectedLevelId ? '/' : '/select-level'} replace />
+          ) : (
+            <LoginPage />
+          )
+        }
+      />
 
-      <main className="app-main">
-        <section className="backend-info">
-          <h2>Backend Connection</h2>
-          {message && <p className="message">{message}</p>}
-          {health && (
-            <div className="health-status">
-              <h3>Health Check</h3>
-              <p>
-                Status:{' '}
-                <span className={health.status === 'ok' ? 'healthy' : 'unhealthy'}>
-                  {health.status}
-                </span>
-              </p>
-              <p>Timestamp: {health.timestamp}</p>
-              <p>Uptime: {health.uptime?.toFixed(2)}s</p>
-            </div>
-          )}
-        </section>
+      <Route
+        path="/select-level"
+        element={
+          <ProtectedRoute>
+            {user?.selectedLevelId ? <Navigate to="/" replace /> : <LevelSelectionPage />}
+          </ProtectedRoute>
+        }
+      />
 
-        <section className="placeholder">
-          <h2>Welcome to Your Monorepo!</h2>
-          <p>
-            This is a placeholder page demonstrating the connection between your React frontend and
-            Hono backend.
-          </p>
-          <p>Start building your application by modifying the components in this directory.</p>
-        </section>
-      </main>
-    </div>
+      <Route
+        path="/"
+        element={
+          <ProtectedRoute>
+            {user?.selectedLevelId ? <DashboardPage /> : <Navigate to="/select-level" replace />}
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="*"
+        element={<Navigate to={status === 'authenticated' ? '/' : '/login'} replace />}
+      />
+    </Routes>
   )
 }
 
